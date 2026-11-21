@@ -5,6 +5,7 @@ import { resumeNormalizationPrompt } from "@/lib/ai/prompts/resume";
 import { ResumeExtractionSchema } from "@/lib/ai/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { deterministicResumeParse, keepResumeEvidence, type ResumeTaxonomyItem } from "@/lib/resume/normalize";
+import { hasSameOrigin } from "@/lib/security/origin";
 
 export const runtime = "nodejs";
 const DEFAULT_TAXONOMY: ResumeTaxonomyItem[] = [
@@ -36,9 +37,11 @@ function canonicalSkill(name: string, taxonomy: ResumeTaxonomyItem[]) {
 }
 
 export async function POST(request: Request) {
+  if (!hasSameOrigin(request)) return NextResponse.json({ error: "This request could not be verified." }, { status: 403 });
   const form = await request.formData();
   const file = form.get("file");
-  if (!(file instanceof File) || file.size > 10 * 1024 * 1024) return NextResponse.json({ error: "Choose a PDF or DOCX under 10 MB" }, { status: 400 });
+  // Netlify buffers binary function bodies with roughly 30% base64 overhead and a 4.5 MB effective cap.
+  if (!(file instanceof File) || file.size > 4 * 1024 * 1024) return NextResponse.json({ error: "Choose a PDF or DOCX under 4 MB" }, { status: 400 });
   if (!["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(file.type)) return NextResponse.json({ error: "Only PDF and DOCX files are accepted" }, { status: 400 });
 
   let rawText = "";

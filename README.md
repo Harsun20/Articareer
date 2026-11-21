@@ -17,6 +17,10 @@ Browser (Next.js App Router + React + Tailwind)
 
 The readiness math is deterministic and documented in [docs/READINESS_SCORE.md](docs/READINESS_SCORE.md). Product assumptions are in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+## Security and privacy
+
+Private data is scoped by Supabase RLS. Destructive browser requests verify the same origin, API responses are marked private and non-cacheable, and common clickjacking, content-sniffing, and referrer protections are enabled. **Reset data** removes workspace records but retains the account; **Delete my information** permanently removes the Supabase account and its resume files after the user types `DELETE`. Keep `.env.local` and the Supabase service-role and Gemini keys out of Git. Configure the server-only service-role key to enable account deletion.
+
 ## Local setup
 
 1. Install Node.js 22 or newer and npm.
@@ -35,7 +39,7 @@ The readiness math is deterministic and documented in [docs/READINESS_SCORE.md](
 1. Create a Supabase project and enable email OTP under Authentication. Add `http://localhost:3000/auth/callback` and your deployed `/auth/callback` URL to Authentication → URL Configuration → Redirect URLs.
 2. Run the SQL files in `supabase/migrations/` in timestamp order using the SQL editor or Supabase CLI.
 3. Copy the project URL into `NEXT_PUBLIC_SUPABASE_URL`; set either `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` for browser sign-in. Set the server URL and anon key too. Keep `SUPABASE_SERVICE_ROLE_KEY` server-only for the protected refresh worker and account deletion.
-4. Google sign-in is optional. To enable it, open Authentication → Sign In / Providers → Google, enable the provider, add your Google OAuth client ID and secret, and set `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true`. In Google Cloud, add Supabase's callback (`https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI. Leave the flag false until the provider is enabled; otherwise use the email sign-in link.
+4. Google sign-in is optional. To enable it, open Authentication → Sign In / Providers → Google, enable the provider, and add your Google OAuth client ID and secret. In Google Cloud, add Supabase's callback (`https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI. The sign-in screen checks the Supabase provider status and only shows Google when it is enabled; email links work independently.
 5. Private `resumes` storage is created by the migration with MIME and ownership policies.
 
 ## Optional integrations
@@ -60,7 +64,7 @@ CI runs lint, typecheck, and unit tests. Playwright smoke tests cover the overvi
 
 ## Deploy
 
-Import the repository into Vercel, add the environment values, set Supabase Auth redirect URLs to the deployed `/auth/callback`, and deploy with the Next.js preset. Set `DEMO_MODE=false`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, and any provider keys in Vercel. Set `APP_URL` (the deployed origin) and the same `CRON_SECRET` as GitHub repository secrets. The weekly GitHub Actions workflow calls the protected endpoint in four-role pages until every active target role has been processed. Each role refresh uses a seven-day posting cache, respects each user's monthly JSearch quota, stores requirements and readiness history, refreshes the persisted gap map, and reprioritizes pending learning tasks. Completed and in-progress tasks are preserved. Run the `Refresh every connected target role` workflow manually to verify setup. A failed role is reported with its role ID and error; remaining roles in that page still run.
+Netlify deployment is prepared in [`docs/NETLIFY_DEPLOY.md`](docs/NETLIFY_DEPLOY.md). Import the GitHub repository into Netlify; the checked-in `netlify.toml` selects the Next.js build and Node 22. Add the required Supabase URL and publishable key plus the server-only Supabase service role, `DEMO_MODE=false`, `CRON_SECRET`, and any provider keys through Netlify's environment settings. Set the production `/auth/callback` as an allowed Supabase redirect. Set `APP_URL` and the same `CRON_SECRET` as GitHub repository secrets. The weekly GitHub Actions workflow calls the protected endpoint in four-role pages until every active target role has been processed. Each role refresh uses a seven-day posting cache, respects each user's monthly JSearch quota, stores requirements and readiness history, refreshes the persisted gap map, and reprioritizes pending learning tasks. Completed and in-progress tasks are preserved. Run the `Refresh every connected target role` workflow manually to verify setup. A failed role is reported with its role ID and error; remaining roles in that page still run.
 
 ## Free-tier limits and caveats
 
@@ -68,6 +72,7 @@ Import the repository into Vercel, add the environment values, set Supabase Auth
 - Adzuna access, attribution, and commercial licensing are governed by its current terms and may require a separate commercial agreement.
 - Gemini rate limits depend on model, account, region, and current Google AI terms. Review regional data-use terms before sending resume content. ArtiCareer strips obvious email addresses and phone numbers before prompt submission; users should still review uploaded content.
 - Supabase free projects may pause after a week of inactivity; check current project limits and backups for your account.
-- Vercel Hobby is for non-commercial use and has execution limits. Verify Vercel's current terms before deploying for business use.
-- Demo employers and postings are fictional. Demo mode intentionally skips private-account refresh. Live scheduled processing requires the Vercel service role key, `DEMO_MODE=false`, provider keys, and both `APP_URL` and `CRON_SECRET` GitHub secrets. Vercel Hobby functions have a short execution window, so the workflow pages the refresh workload into small requests.
+- Netlify function request bodies are limited; binary uploads incur encoding overhead. This app caps resume uploads at 4 MB so they fit the current buffered request limit. Verify current Netlify plan limits before increasing it.
+- Demo employers and postings are fictional. Demo mode intentionally skips private-account refresh. Live scheduled processing requires the server-only Supabase service role key, `DEMO_MODE=false`, provider keys, and both `APP_URL` and `CRON_SECRET` GitHub secrets. The workflow pages the refresh workload into small requests.
+- Vercel Hobby is for non-commercial use and has execution limits if you choose to deploy there instead. Verify current terms before using it for business.
 - This repository is a strong functional prototype, not a substitute for security review, privacy review, vendor-term review, or load testing before launch.

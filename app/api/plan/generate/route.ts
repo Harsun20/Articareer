@@ -7,6 +7,7 @@ import { deterministicLearningPlan, type PlanGap } from "@/lib/plan/generation";
 import { loadReadinessData } from "@/lib/readiness/data";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { hasSameOrigin } from "@/lib/security/origin";
 
 const RequestSchema = z.object({
   targetRoleId: z.string().optional(),
@@ -17,6 +18,7 @@ const RequestSchema = z.object({
 const COMPLETE = new Set(["completed", "in-progress", "in_progress"]);
 
 export async function POST(request: Request) {
+  if (!hasSameOrigin(request)) return NextResponse.json({ error: "This request could not be verified." }, { status: 403 });
   const parsedRequest = RequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsedRequest.success) return NextResponse.json({ error: "Choose a valid target role and weekly time budget." }, { status: 400 });
   const body = parsedRequest.data;

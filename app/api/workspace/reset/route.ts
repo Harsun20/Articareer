@@ -10,9 +10,9 @@ export async function DELETE(request:Request){
   if(!client)return NextResponse.json({error:"Supabase is not configured"},{status:503});
   const {data:{user}}=await client.auth.getUser();
   if(!user)return NextResponse.json({error:"Sign in required"},{status:401});
-  const files=await client.storage.from("resumes").list(user.id,{limit:100});
-  if(files.error)return NextResponse.json({error:files.error.message},{status:500});
-  if(files.data?.length){const removed=await client.storage.from("resumes").remove(files.data.map(file=>`${user.id}/${file.name}`));if(removed.error)return NextResponse.json({error:removed.error.message},{status:500});}
+  const paths:string[]=[];
+  for(let offset=0;;offset+=100){const files=await client.storage.from("resumes").list(user.id,{limit:100,offset});if(files.error)return NextResponse.json({error:files.error.message},{status:500});for(const file of files.data||[])paths.push(`${user.id}/${file.name}`);if(!files.data||files.data.length<100)break;}
+  for(let offset=0;offset<paths.length;offset+=100){const removed=await client.storage.from("resumes").remove(paths.slice(offset,offset+100));if(removed.error)return NextResponse.json({error:removed.error.message},{status:500});}
   for(const table of tables){
     const {error}=await client.from(table).delete().eq("user_id",user.id);
     if(error)return NextResponse.json({error:`Could not reset ${table}: ${error.message}`},{status:500});
