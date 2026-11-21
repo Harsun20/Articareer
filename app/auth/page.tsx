@@ -21,11 +21,15 @@ export default function SignIn() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [configured, setConfigured] = useState(Boolean(credentials().url && credentials().key));
-  const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true";
+  const [googleEnabled,setGoogleEnabled]=useState(false);
+  const [hasSession,setHasSession]=useState(false);
   useEffect(() => {
     const issue = new URLSearchParams(location.search).get("error");
     if (issue === "setup") setError("Sign-in could not complete because Supabase URL, publishable key, or callback settings are missing.");
     if (issue === "callback") setError("The sign-in link could not be verified. Request a fresh link and open it in the same browser.");
+    const {url,key}=credentials();
+    if(url&&key){const supabase=createBrowserClient(url,key);void supabase.auth.getUser().then(({data})=>setHasSession(Boolean(data.user)));}
+    void fetch("/api/auth/providers").then(response=>response.json()).then(data=>setGoogleEnabled(data.googleEnabled===true)).catch(()=>setGoogleEnabled(false));
   }, []);
 
   async function magic(event: React.FormEvent<HTMLFormElement>) {
@@ -85,7 +89,7 @@ export default function SignIn() {
       {error && <div className="notice" role="alert" style={{ marginBottom: 14, borderColor: "#e0b8a7", color: "#824a3a" }}>{error}</div>}
 
       {sent ? <div className="notice" role="status"><strong>Check your inbox.</strong><br/>We sent a secure sign-in link to {email}. Open it in this browser to return to your workspace.</div> : <>
-        {googleEnabled ? <button type="button" className="btn" style={{ width: "100%", padding: 12 }} disabled={working} onClick={google}>{working ? "Opening Google…" : "Continue with Google"}</button> : <div className="notice" style={{ marginBottom: 14 }}>Google sign-in is not enabled for this project yet. Use email below, or configure the Google provider in Supabase.</div>}
+        {googleEnabled ? <button type="button" className="btn" style={{ width: "100%", padding: 12 }} disabled={working} onClick={google}>{working ? "Opening Google…" : "Continue with Google"}</button> : <div className="notice" style={{ marginBottom: 14 }}>Google sign-in is currently disabled in this Supabase project. Email sign-in is available; to enable Google, finish its provider setup in Supabase.</div>}
         <div style={{ textAlign: "center", fontSize: 11, color: "#78857e", padding: 14 }}>Sign in with an email link</div>
         <form onSubmit={magic}>
           <label className="section-desc" htmlFor="signin-email" style={{ display: "block", marginBottom: 6 }}>Email address</label>
@@ -93,6 +97,8 @@ export default function SignIn() {
           <button type="submit" className="btn primary" style={{ width: "100%", padding: 12, marginTop: 10 }} disabled={working}>{working ? "Sending link…" : "Send magic link"}</button>
         </form>
       </>}
+
+      {hasSession&&<div className="notice" style={{marginTop:16}}><strong>You’re already signed in.</strong><br/>Continue to your saved career workspace.<br/><Link href="/workspace" className="btn primary" style={{width:"100%",justifyContent:"center",marginTop:10}}>Continue to workspace</Link></div>}
 
       <div style={{ borderTop: "1px solid #e7ebe5", marginTop: 22, paddingTop: 18, textAlign: "center" }}>
         <p className="section-desc" style={{ marginBottom: 10 }}>Just looking around?</p>

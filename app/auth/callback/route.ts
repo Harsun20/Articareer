@@ -4,7 +4,7 @@ export async function GET(request:NextRequest){
  const url=new URL(request.url);
  const code=url.searchParams.get("code");
  const destination=url.searchParams.get("next");
- const safeDestination=destination?.startsWith("/")&&!destination.startsWith("//")?destination:"/";
+ const safeDestination=destination?.startsWith("/")&&!destination.startsWith("//")?destination:"/workspace";
  const response=NextResponse.redirect(new URL(safeDestination,request.url));
  const projectUrl=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL;
  const projectKey=process.env.SUPABASE_ANON_KEY||process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
