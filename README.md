@@ -28,13 +28,13 @@ The readiness math is deterministic and documented in [docs/READINESS_SCORE.md](
    npm run dev
    ```
 
-4. Open `http://localhost:3000`. The seeded workspace has Overview, Resume, Target Roles, Job Market, Skill Gaps, Learning Plan, Portfolio, Interviews, Applications, and Readiness pages.
+4. Open `http://localhost:3000`. Use **Try demo mode** in the sidebar to load the seeded resume evidence, job postings, practice sessions, applications, and score history without changing account data. The workspace has Overview, Resume, Target Roles, Job Market, Skill Gaps, Learning Plan, Portfolio, Interviews, Applications, and Readiness pages.
 
 ## Supabase setup
 
 1. Create a Supabase project and configure email OTP and Google OAuth under Authentication. Add local and deployed callback URLs (`/auth/callback`).
 2. Run the SQL files in `supabase/migrations/` in timestamp order using the SQL editor or Supabase CLI.
-3. Copy the project URL and anon key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Set the server values too. The service role key is only needed for account deletion and must remain server-only.
+3. Copy the project URL and anon key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server routes. Set `SUPABASE_SERVICE_ROLE_KEY` as a server-only Vercel environment variable for the protected refresh worker and account deletion; never expose it with a `NEXT_PUBLIC_` name.
 4. Add redirect URLs and enable Google provider credentials in the Supabase dashboard.
 5. Private `resumes` storage is created by the migration with MIME and ownership policies.
 
@@ -60,7 +60,7 @@ CI runs lint, typecheck, and unit tests. Playwright smoke tests cover the overvi
 
 ## Deploy
 
-Import the repository into Vercel, add the environment values, set Supabase Auth redirect URLs to the deployed `/auth/callback`, and deploy with the Next.js preset. Configure `APP_URL` and `CRON_SECRET` as GitHub repository secrets to call the protected weekly refresh endpoint. Vercel Hobby may limit long-running or scheduled work; an external scheduler or worker can be used for production refresh processing.
+Import the repository into Vercel, add the environment values, set Supabase Auth redirect URLs to the deployed `/auth/callback`, and deploy with the Next.js preset. Set `DEMO_MODE=false`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, and any provider keys in Vercel. Set `APP_URL` (the deployed origin) and the same `CRON_SECRET` as GitHub repository secrets. The weekly GitHub Actions workflow calls the protected endpoint in four-role pages until every active target role has been processed. Each role refresh uses a seven-day posting cache, respects each user's monthly JSearch quota, stores requirements and readiness history, refreshes the persisted gap map, and reprioritizes pending learning tasks. Completed and in-progress tasks are preserved. Run the `Refresh every connected target role` workflow manually to verify setup. A failed role is reported with its role ID and error; remaining roles in that page still run.
 
 ## Free-tier limits and caveats
 
@@ -69,5 +69,5 @@ Import the repository into Vercel, add the environment values, set Supabase Auth
 - Gemini rate limits depend on model, account, region, and current Google AI terms. Review regional data-use terms before sending resume content. ArtiCareer strips obvious email addresses and phone numbers before prompt submission; users should still review uploaded content.
 - Supabase free projects may pause after a week of inactivity; check current project limits and backups for your account.
 - Vercel Hobby is for non-commercial use and has execution limits. Verify Vercel's current terms before deploying for business use.
-- Demo employers and postings are fictional. The UI demo illustrates workflows; Supabase-backed user writes and complete scheduled refresh processing require configured production services.
+- Demo employers and postings are fictional. Demo mode intentionally skips private-account refresh. Live scheduled processing requires the Vercel service role key, `DEMO_MODE=false`, provider keys, and both `APP_URL` and `CRON_SECRET` GitHub secrets. Vercel Hobby functions have a short execution window, so the workflow pages the refresh workload into small requests.
 - This repository is a strong functional prototype, not a substitute for security review, privacy review, vendor-term review, or load testing before launch.

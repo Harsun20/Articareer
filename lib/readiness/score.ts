@@ -6,6 +6,8 @@ export type ReadinessInput = {
   projects: { completed: boolean; mappedToGap: boolean; artifact: boolean; metricMet: boolean }[];
   interviewScores: { score: number; date: string; type: string }[];
   applications: number;
+  responseRate?: number | null;
+  responseSampleSize?: number;
   resumeKeywordCoverage: number;
   unsupportedClaims: number;
   postings: number;
@@ -28,13 +30,14 @@ export function scoreReadiness(input: ReadinessInput): ReadinessResult {
   const recency = interview.map(i=>{ const ageDays=Math.max(0,(new Date(input.asOf).getTime()-new Date(i.date).getTime())/86400000); return (i.score/5*100)*Math.exp(-ageDays/180); });
   const typeCoverage = new Set(interview.map(x=>x.type)).size;
   const interviewScore = interview.length ? clamp(mean(recency)*(0.7+0.1*Math.min(3,typeCoverage)) * Math.min(1,interview.length/3)) : 0;
-  const applicationQuality = clamp(input.resumeKeywordCoverage- Math.min(45,Math.max(0,input.unsupportedClaims)*15) + (input.applications>=10?Math.min(10,input.applications/2):0));
+  const responseSignal=input.applications>=10&&input.responseRate!==null&&input.responseRate!==undefined?Math.max(-10,Math.min(10,(input.responseRate-50)*0.2)):0;
+  const applicationQuality = clamp(input.resumeKeywordCoverage- Math.min(45,Math.max(0,input.unsupportedClaims)*15) + responseSignal);
   const market = clamp(35+Math.min(35,input.postings*1.2)+Math.min(20,input.recentPostings*2)+clamp(input.locationFit)*0.1);
   const components: ReadinessResult["components"] = {
     skillCoverage:{score:skillCoverage,weight:READINESS_WEIGHTS.skillCoverage,inputs:{skills:allSkills.length,weightedEvidence:skillDenom?skillCoverage:0},evidence:allSkills.filter(x=>x.evidenced).map(x=>x.name),missing:allSkills.filter(x=>!x.evidenced).map(x=>x.name)},
     portfolioEvidence:{score:portfolio,weight:READINESS_WEIGHTS.portfolioEvidence,inputs:{mappedCompletedProjects:projectUnits},evidence:input.projects.filter(x=>x.completed&&x.mappedToGap).map((_,i)=>`Completed gap project ${i+1}`),missing:input.projects.filter(x=>!x.artifact||!x.metricMet).map((_,i)=>`Add artifact or success metric to project ${i+1}`)},
     interviewReadiness:{score:interviewScore,weight:READINESS_WEIGHTS.interviewReadiness,inputs:{sessions:interview.length,coveredTypes:typeCoverage,recencyWeightedAverage:Math.round(mean(recency))},evidence:interview.map(x=>`${x.type} interview (${x.score}/5)`),missing:interview.length<3?[`Complete ${3-interview.length} more scored mock interviews`]:[]},
-    applicationQuality:{score:applicationQuality,weight:READINESS_WEIGHTS.applicationQuality,inputs:{resumeKeywordCoverage:input.resumeKeywordCoverage,unsupportedClaims:input.unsupportedClaims,applications:input.applications},evidence:input.resumeKeywordCoverage>=65?["Resume keyword coverage is at least 65%"]:[],missing:[...(input.resumeKeywordCoverage<65?["Improve resume alignment with target postings"]:[]),...(input.unsupportedClaims?[`${input.unsupportedClaims} unsupported claim(s) flagged`]:[])]},
+    applicationQuality:{score:applicationQuality,weight:READINESS_WEIGHTS.applicationQuality,inputs:{resumeKeywordCoverage:input.resumeKeywordCoverage,unsupportedClaims:input.unsupportedClaims,applications:input.applications,responseRate:input.responseRate??"not enough data",responseSampleSize:input.responseSampleSize??input.applications},evidence:[...(input.resumeKeywordCoverage>=65?["Resume keyword coverage is at least 65%"]:[]),...(input.applications>=10&&input.responseRate!==null&&input.responseRate!==undefined?[`Observed response rate: ${input.responseRate}% across ${input.applications} applications`]:[])],missing:[...(input.resumeKeywordCoverage<65?["Improve resume alignment with target postings"]:[]),...(input.unsupportedClaims?[`${input.unsupportedClaims} unsupported claim(s) flagged`]:[]),...(input.applications<10?[`Log ${10-input.applications} more applications before using outcome signals`]:[])]},
     marketDemand:{score:market,weight:READINESS_WEIGHTS.marketDemand,inputs:{postings:input.postings,recentPostings:input.recentPostings,locationFit:input.locationFit},evidence:input.postings?[`${input.postings} collected postings`]:[],missing:input.postings<10?["Collect more target-role postings"]:[]}
   };
   const score=Math.round(Object.entries(components).reduce((s,[k,c])=>s+c.score*READINESS_WEIGHTS[k as ReadinessComponent],0));

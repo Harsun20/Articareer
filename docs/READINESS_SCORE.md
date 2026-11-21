@@ -11,8 +11,8 @@ The score answers “Am I ready to apply now?” using evidence and market signa
 | Skill coverage (30%) | Evidence-weighted share of must-have and differentiator skills, using each skill’s posting frequency as its weight. Confirmed resume evidence, user confirmations, and linked work count. |
 | Portfolio (20%) | A completed project mapped to a role gap earns 1 unit; a linked artifact adds 0.75 and a met success metric adds 0.5. Three units reach 100. |
 | Interviews (20%) | Mean of scores on a 0–100 scale, decayed by `exp(-ageDays / 180)`, multiplied by a question-type coverage factor (0.7–1.0) and a session-count factor capped at 3 sessions. |
-| Application quality (15%) | Resume keyword coverage, minus 15 points per unsupported claim (penalty capped at 45), plus a small response-signal adjustment after 10 applications. Clamped to 0–100. |
-| Market demand (15%) | 35 baseline + up to 35 points from collected postings + up to 20 from recent postings + 10% of location fit; clamped to 0–100. |
+| Application quality (15%) | Resume keyword coverage, minus 15 points per unsupported claim (penalty capped at 45), plus a response signal only after 10 applications. The signal is `(responseRate − 50) × 0.2`, clamped to −10…+10. It uses observed outcomes descriptively and makes no causal claim. |
+| Market demand (15%) | 35 baseline + up to 35 points from collected postings + up to 20 from postings in the last 30 days + 10% of measured location fit; clamped to 0–100. |
 
 Every displayed component includes its raw input counts, counted evidence, missing evidence, and component weight. Missing evidence contributes zero; AI-generated suggestions do not count as proof.
 
@@ -33,7 +33,7 @@ The score is an explicit directional answer, not a guarantee. At 60+, the produc
 - **Medium:** at least 8 postings and 2 interviews; range is score ±10.
 - **Low:** anything sparser; range is score ±18.
 
-Bounds are clipped to 0–100. Confidence is about evidence quantity, not model certainty. Application segments below 10 records are labeled low confidence.
+Bounds are clipped to 0–100. Confidence is about evidence quantity, not model certainty. Response rates do not affect application quality until the user has 10 logged applications; smaller application samples are labeled low confidence.
 
 ## Worked example
 
@@ -41,7 +41,7 @@ Suppose skill coverage is 72, portfolio 75, interviews 64, application quality 6
 
 `0.30×72 + 0.20×75 + 0.20×64 + 0.15×68 + 0.15×80 = 71.0`
 
-That yields **71, Nearly ready**. With sparse inputs, the UI would show a likely range of **53–89** and explain which missing signals would narrow it. The current demo data scores approximately 68 with medium confidence and a range of 58–78.
+That yields **71, Nearly ready**. With sparse inputs, the UI would show a likely range of **53–89** and explain which missing signals would narrow it. Demo scores are calculated from the seeded sample resume evidence, job postings, practice sessions, and applications.
 
 ## Action simulations and history
 
