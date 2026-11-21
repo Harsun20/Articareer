@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AdzunaProvider, DemoJobProvider, FallbackJobProvider, JSearchProvider, type Job } from "@/lib/jobs/provider";
 import { loadReadinessData } from "@/lib/readiness/data";
 import { scoreReadiness } from "@/lib/readiness/score";
+import { extractJobRequirements } from "@/lib/skills/requirements";
 
 const monthStart=()=>{const date=new Date();return new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),1)).toISOString().slice(0,10)};
 
@@ -23,11 +24,12 @@ export async function GET(request:Request){
   const rows=jobs.map(job=>({user_id:user.id,target_role_id:targetRoleId||null,source:job.source,source_id:job.url,url:job.url,content_hash:createHash("sha256").update(job.url).digest("hex"),title:job.title,company:job.company,location:job.location,raw_ad:job.description,requirements:[],fetched_at:new Date().toISOString()}));
   const {data:stored,error:storeError}=await supabase.from("job_postings").upsert(rows,{onConflict:"user_id,content_hash"}).select("id,raw_ad,title");if(storeError)throw storeError;
   const {data:taxonomy,error:taxonomyError}=await supabase.from("skill_taxonomy").select("canonical_skill,aliases");if(taxonomyError)throw taxonomyError;
-  const requirements=(stored||[]).flatMap(posting=>(taxonomy||[]).filter(skill=>[skill.canonical_skill,...skill.aliases].some(term=>`${posting.title} ${posting.raw_ad}`.toLowerCase().includes(term.toLowerCase()))).map(skill=>({user_id:user.id,posting_id:posting.id,canonical_skill:skill.canonical_skill,importance:"must-have",confidence:0.75,evidence:`Matched in posting: ${posting.title}`})));
+  const extracted=await extractJobRequirements((stored||[]).map(posting=>({id:posting.id,title:posting.title,description:posting.raw_ad})),taxonomy||[],{client:supabase,userId:user.id});
+  const requirements=extracted.requirements.map(requirement=>({user_id:user.id,...requirement}));
   if(requirements.length){const {error}=await supabase.from("skill_requirements").upsert(requirements,{onConflict:"posting_id,canonical_skill"});if(error)throw error;}
   const overall=await loadReadinessData(supabase,user.id);const readiness=scoreReadiness(overall.input);const scoped=targetRoleId?await loadReadinessData(supabase,user.id,targetRoleId):null;const roleReadiness=scoped?{targetRoleId:targetRoleId!,title:query,...scoreReadiness(scoped.input)}:null;
   const snapshot=await supabase.from("readiness_scores").insert({user_id:user.id,target_role_id:null,score:readiness.score,score_low:readiness.low,score_high:readiness.high,component_breakdown:readiness.components,confidence:readiness.confidence,verdict:readiness.verdict,event_type:"job_refresh",change_summary:"Recalculated after collected job postings changed."});if(snapshot.error)throw snapshot.error;
   if(roleReadiness){const roleSnapshot=await supabase.from("readiness_scores").insert({user_id:user.id,target_role_id:targetRoleId,score:roleReadiness.score,score_low:roleReadiness.low,score_high:roleReadiness.high,component_breakdown:roleReadiness.components,confidence:roleReadiness.confidence,verdict:roleReadiness.verdict,event_type:"job_refresh",change_summary:`Recalculated for ${query} after collecting new postings.`});if(roleSnapshot.error)throw roleSnapshot.error;}
-  return NextResponse.json({jobs,source:jobs[0]?.source??"none",remainingQuota:Math.max(0,quota-used-(used<quota?1:0)),readiness,readinessInput:overall.input,gaps:overall.gaps,roleReadiness});
+  return NextResponse.json({jobs,source:jobs[0]?.source??"none",requirementSource:extracted.source,remainingQuota:Math.max(0,quota-used-(used<quota?1:0)),readiness,readinessInput:overall.input,gaps:overall.gaps,roleReadiness});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to retrieve postings",jobs:[],remainingQuota:Math.max(0,quota-used)},{status:503});}
 }

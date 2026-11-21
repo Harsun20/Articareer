@@ -1,0 +1,5 @@
+export type RequirementTaxonomyItem = { canonical_skill: string; aliases: string[] };
+
+export function jobRequirementPrompt(postings: { title: string; description: string }[], taxonomy: RequirementTaxonomyItem[]) {
+  return `Extract skills and capabilities explicitly required or preferred by each real job posting. Return one requirements object for every postingIndex from 0 to ${postings.length - 1}; never infer from the job title alone. Classify as must-have (explicit required/minimum), differentiator (preferred/strong advantage), or nice-to-have (optional). Each item must include a short exact evidence excerpt copied from that posting. Normalize to the closest canonical skill when one matches the supplied taxonomy; otherwise use a concise canonical name. Do not include generic traits unless the ad asks for them.\nCanonical taxonomy and aliases:\n${JSON.stringify(taxonomy).slice(0, 8000)}\nPostings:\n${JSON.stringify(postings.map((posting, postingIndex) => ({ postingIndex, ...posting }))).slice(0, 18000)}`;
+}

@@ -8,7 +8,7 @@ ArtiCareer is a career-coach workspace that turns a resume and target roles into
 Browser (Next.js App Router + React + Tailwind)
         │
         ├── Demo workspace ── seeded resume evidence, jobs, plan, interview examples
-        ├── API routes ─────── resume upload, job search, readiness, account deletion
+        ├── API routes ─────── resume normalization, job analysis, plan generation, readiness, account deletion
         │                       ├── Gemini wrapper (schema-validated, cached, throttled)
         │                       └── JobProvider (JSearch → Adzuna fallback)
         └── Supabase ───────── Auth, Postgres + pgvector, private resume storage, RLS
@@ -28,24 +28,24 @@ The readiness math is deterministic and documented in [docs/READINESS_SCORE.md](
    npm run dev
    ```
 
-4. Open `http://localhost:3000`. Use **Try demo mode** in the sidebar to load the seeded resume evidence, job postings, practice sessions, applications, and score history without changing account data. The workspace has Overview, Resume, Target Roles, Job Market, Skill Gaps, Learning Plan, Portfolio, Interviews, Applications, and Readiness pages.
+4. Open `http://localhost:3000`. The sign-in screen appears first. Choose **Explore the demo workspace** to try seeded resume evidence, postings, a plan, interviews, applications, and readiness without an account, or sign in to load private workspace data.
 
 ## Supabase setup
 
-1. Create a Supabase project and configure email OTP and Google OAuth under Authentication. Add local and deployed callback URLs (`/auth/callback`).
+1. Create a Supabase project and enable email OTP under Authentication. Add `http://localhost:3000/auth/callback` and your deployed `/auth/callback` URL to Authentication → URL Configuration → Redirect URLs.
 2. Run the SQL files in `supabase/migrations/` in timestamp order using the SQL editor or Supabase CLI.
-3. Copy the project URL and anon key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server routes. Set `SUPABASE_SERVICE_ROLE_KEY` as a server-only Vercel environment variable for the protected refresh worker and account deletion; never expose it with a `NEXT_PUBLIC_` name.
-4. Add redirect URLs and enable Google provider credentials in the Supabase dashboard.
+3. Copy the project URL into `NEXT_PUBLIC_SUPABASE_URL`; set either `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` for browser sign-in. Set the server URL and anon key too. Keep `SUPABASE_SERVICE_ROLE_KEY` server-only for the protected refresh worker and account deletion.
+4. Google sign-in is optional. To enable it, open Authentication → Sign In / Providers → Google, enable the provider, add your Google OAuth client ID and secret, and set `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true`. In Google Cloud, add Supabase's callback (`https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI. Leave the flag false until the provider is enabled; otherwise use the email sign-in link.
 5. Private `resumes` storage is created by the migration with MIME and ownership policies.
 
 ## Optional integrations
 
-- **Gemini:** set `GEMINI_API_KEY` and `DEMO_MODE=false`. The default model is `gemini-3.6-flash` and can be changed with `GEMINI_MODEL`. Interview scoring runs through `lib/ai/client.ts`, validates output with Zod, retries once with a repair instruction, caches responses, strips common contact fields, and records request/token use when a signed-in user is available. Unavailable calls use a deterministic rubric fallback. Set `GEMINI_MONTHLY_QUOTA` if you want to track an account-specific usage target; `0` leaves the target unset.
+- **Gemini:** set `GEMINI_API_KEY` and `DEMO_MODE=false`. The default model is `gemini-3.6-flash` and can be changed with `GEMINI_MODEL`. Resume normalization, job requirement extraction, learning plan drafting, and interview scoring all use the single `lib/ai/client.ts` wrapper. It validates JSON with Zod, retries once with a repair instruction, caches results per user, redacts obvious resume contact details, rate-limits requests, and logs token usage. Invalid, unavailable, or disabled AI calls use clearly labeled deterministic fallbacks. Resume evidence is checked against the redacted source before it is accepted. Set `GEMINI_MONTHLY_QUOTA` if you want to track a usage target. The scheduled service-role worker requires migration `202611210004_service_api_usage.sql` to attribute Gemini usage safely to the account owner.
 - **JSearch:** set `RAPIDAPI_KEY`. The configured monthly default is 200 requests (`JSEARCH_MONTHLY_QUOTA`). Results use the provider interface and fall back to Adzuna.
 - **Adzuna:** set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`. Review Adzuna's terms before commercial use; API access does not itself establish commercial licensing rights.
 - **Auth:** set public Supabase URL and anon key for the sign-in page. With no project configured, the demo remains open.
 
-All supported variables are listed in `.env.example`.
+All supported variables are listed in `.env.example`. Resume normalization and learning plans are user-editable; plan regeneration preserves completed and in-progress weeks. The UI labels sample, cached, Gemini-generated, and deterministic fallback results so it does not present mock data as live output.
 
 ## Checks
 

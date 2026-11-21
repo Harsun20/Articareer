@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { AdzunaProvider, FallbackJobProvider, JSearchProvider, type Job } from "@/lib/jobs/provider";
 import { loadReadinessData } from "@/lib/readiness/data";
 import { scoreReadiness } from "@/lib/readiness/score";
+import { extractJobRequirements } from "@/lib/skills/requirements";
 
 // Keep each invocation inside Vercel Hobby's function window. The scheduled
 // workflow follows nextOffset until every active role has been processed.
@@ -101,7 +102,8 @@ async function refreshRole(client: ReturnType<typeof serviceClient>, role: Targe
     if (rows.length) {
       const { data: stored, error: storeError } = await client.from("job_postings").upsert(rows, { onConflict: "user_id,content_hash" }).select("id,title,raw_ad");
       if (storeError) throw storeError;
-      const requirements = (stored || []).flatMap((posting) => taxonomy.filter((skill) => [skill.canonical_skill, ...skill.aliases].some((term) => `${posting.title} ${posting.raw_ad}`.toLowerCase().includes(term.toLowerCase()))).map((skill) => ({ user_id: role.user_id, posting_id: posting.id, canonical_skill: skill.canonical_skill, importance: "must-have", confidence: 0.75, evidence: `Matched in posting: ${posting.title}` })));
+      const extracted = await extractJobRequirements((stored || []).map((posting) => ({ id: posting.id, title: posting.title, description: posting.raw_ad })), taxonomy, { client, userId: role.user_id });
+      const requirements = extracted.requirements.map((requirement) => ({ user_id: role.user_id, ...requirement }));
       if (requirements.length) {
         const { error: requirementError } = await client.from("skill_requirements").upsert(requirements, { onConflict: "posting_id,canonical_skill" });
         if (requirementError) throw requirementError;
