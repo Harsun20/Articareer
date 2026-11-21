@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasSameOrigin } from "@/lib/security/origin";
 
 const tables=["interview_answers","interview_sessions","readiness_actions","readiness_scores","response_insights","applications","portfolio_projects","learning_plan","skill_gaps","skill_requirements","user_skills","resumes","job_postings","target_roles","api_usage","user_corrections","ai_cache"] as const;
 
-export async function DELETE(){
+export async function DELETE(request:Request){
+  if(!hasSameOrigin(request))return NextResponse.json({error:"This request could not be verified."},{status:403});
   const client=await createClient();
   if(!client)return NextResponse.json({error:"Supabase is not configured"},{status:503});
   const {data:{user}}=await client.auth.getUser();
