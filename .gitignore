@@ -1,7 +1,39 @@
-node_modules
-.next
-coverage
-playwright-report
-test-results
+# Dependencies
+node_modules/
+
+# Next.js and build output
+.next/
+out/
+dist/
+build/
+
+# Tests and coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# TypeScript and tool caches
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+.cache/
+.parcel-cache/
+.turbo/
+.vite/
+
+# Environment files and secrets
 .env*
 !.env.example
+
+# Logs and runtime files
+*.log
+npm-debug.log*
+yarn-debug.log*
+*.pid
+*.seed
+
+# Editor and OS files
+.vscode-test/
+.DS_Store
+Thumbs.db
