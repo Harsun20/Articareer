@@ -1,0 +1,6 @@
+export type PlanTask={id?:string;week:number;title:string;focus:string;tasks:string[];deliverable:string;done:boolean;target_role_id?:string|null;resources?:string[];due_date?:string|null};
+export type WorkspaceSkill={id?:string;resume_id?:string|null;name:string;canonical_skill:string;level:"beginner"|"intermediate"|"advanced"|"expert";evidence:string;source:"resume"|"project"|"user";confirmed:boolean};
+export type WorkspaceRole={id:string;title:string;seniority?:string|null;industry?:string|null;target_companies?:string[];location?:string|null;salary_min?:number|null;salary_max?:number|null};
+export type WorkspaceProject={id:string;title:string;problem_statement:string;dataset_source?:string|null;deliverable?:string|null;success_metric?:string|null;mapped_gaps?:string[];status:string;repo_url?:string|null;demo_url?:string|null;metric_met?:boolean};
+export type WorkspaceApplication={id:string;company:string;role:string;company_type?:string|null;channel?:string|null;jd_cluster?:string|null;applied_at:string;response_at?:string|null;stage:string;outcome?:string|null;rejection_reason?:string|null};
+export type ReadinessSnapshot={score:number;score_low:number|null;score_high:number|null;confidence:string;verdict:string;event_type:string;created_at:string;component_breakdown?:Record<string,unknown>};

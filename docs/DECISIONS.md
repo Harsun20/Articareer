@@ -10,3 +10,4 @@
 8. **No auto-apply.** Application rows record user-entered actions only. There is no LinkedIn integration or automated application submission.
 9. **Market and demo data.** Demo postings are fictional examples. External provider coverage, salary availability, regional Gemini handling, and licensing depend on vendor terms and configuration.
 10. **Deployment target.** The app is designed for Next.js on Vercel Hobby, but Hobby is non-commercial and scheduled execution can be constrained. Use an external scheduler if required by the workload or plan.
+11. **Workspace persistence.** Signed-in edits use the user's Supabase session and RLS through `/api/workspace`; browser local storage remains the offline/demo fallback. Removed target roles are archived with `is_active` so linked plans, postings, and readiness history remain intact. Apply every migration in timestamp order before enabling account sync.

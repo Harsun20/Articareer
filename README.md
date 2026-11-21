@@ -40,7 +40,7 @@ The readiness math is deterministic and documented in [docs/READINESS_SCORE.md](
 
 ## Optional integrations
 
-- **Gemini:** set `GEMINI_API_KEY` and `DEMO_MODE=false`. Interview scoring runs through `lib/ai/client.ts`, validates output with Zod, retries once with a repair instruction, caches responses, strips common contact fields, and records request/token use when a signed-in user is available. Unavailable calls use a deterministic rubric fallback. Set `GEMINI_MONTHLY_QUOTA` if you want to track an account-specific usage target; `0` leaves the target unset.
+- **Gemini:** set `GEMINI_API_KEY` and `DEMO_MODE=false`. The default model is `gemini-3.6-flash` and can be changed with `GEMINI_MODEL`. Interview scoring runs through `lib/ai/client.ts`, validates output with Zod, retries once with a repair instruction, caches responses, strips common contact fields, and records request/token use when a signed-in user is available. Unavailable calls use a deterministic rubric fallback. Set `GEMINI_MONTHLY_QUOTA` if you want to track an account-specific usage target; `0` leaves the target unset.
 - **JSearch:** set `RAPIDAPI_KEY`. The configured monthly default is 200 requests (`JSEARCH_MONTHLY_QUOTA`). Results use the provider interface and fall back to Adzuna.
 - **Adzuna:** set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`. Review Adzuna's terms before commercial use; API access does not itself establish commercial licensing rights.
 - **Auth:** set public Supabase URL and anon key for the sign-in page. With no project configured, the demo remains open.
