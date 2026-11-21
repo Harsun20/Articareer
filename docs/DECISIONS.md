@@ -1,0 +1,12 @@
+# Decisions and assumptions
+
+1. **Demo first.** The first experience is a seeded workspace with no login or API key. Demo evidence and plan progress persist in browser local storage; resume files are parsed by the server and discarded in demo mode. Live provider and Supabase persistence activate when credentials are configured. This keeps local setup and exploration possible without third-party accounts.
+2. **Readiness is deterministic.** The documented formula is implemented in a pure module with a fixed `asOf` date input. Its component inputs are visible. The UI demo currently presents representative seeded values.
+3. **Evidence must be confirmed.** Parsed skills are proposed evidence; unconfirmed entries do not contribute to readiness. Corrections belong to the user and should be recorded in `user_corrections` by a production mutation flow.
+4. **Job provider fallback.** JSearch is attempted first, then Adzuna. The application keeps a quota configuration and displays a demo quota estimate. Production usage increments need a server-side authenticated collection worker to make the counter authoritative.
+5. **Weekly refresh endpoint.** GitHub Actions can call the protected endpoint, but fetching each user's target roles and persisting refresh results is left to a production worker. The repository does not store user credentials in Actions.
+6. **Supabase auth.** Email OTP and Google OAuth use Supabase Auth; configure redirect URLs and Google credentials in Supabase. The local demo deliberately remains usable without auth.
+7. **Resume extraction.** PDF text uses `pdf-parse`; DOCX text uses Mammoth. This release stores extracted text and defers richer section inference to the validated Gemini wrapper. Contact-data redaction is applied before prompts.
+8. **No auto-apply.** Application rows record user-entered actions only. There is no LinkedIn integration or automated application submission.
+9. **Market and demo data.** Demo postings are fictional examples. External provider coverage, salary availability, regional Gemini handling, and licensing depend on vendor terms and configuration.
+10. **Deployment target.** The app is designed for Next.js on Vercel Hobby, but Hobby is non-commercial and scheduled execution can be constrained. Use an external scheduler if required by the workload or plan.

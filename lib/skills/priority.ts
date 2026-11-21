@@ -1,0 +1,2 @@
+export type GapWeights={postingFrequency:number;roleRelevance:number;userProximity:number;timeToLearn:number};
+export function priorityScore(x:GapWeights){const w={frequency:.35,relevance:.3,proximity:.2,time:.15};const positiveWeight=w.frequency+w.relevance+w.proximity;const raw=w.frequency*x.postingFrequency+w.relevance*x.roleRelevance+w.proximity*x.userProximity-w.time*x.timeToLearn;return Math.round(Math.max(0,Math.min(100,100*raw/positiveWeight)));}

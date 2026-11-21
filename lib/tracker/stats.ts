@@ -1,0 +1,2 @@
+export type Application={segment:string;response:boolean;interview:boolean};
+export function segmentStats(rows:Application[]){const map=new Map<string,Application[]>();for(const r of rows)map.set(r.segment,[...(map.get(r.segment)??[]),r]);return [...map].map(([segment,items])=>({segment,n:items.length,responseRate:items.length?items.filter(x=>x.response).length/items.length:0,interviewConversion:items.length?items.filter(x=>x.interview).length/items.length:0,lowConfidence:items.length<10}));}

@@ -1,0 +1,3 @@
+import { NextResponse } from "next/server";
+import { scoreReadiness } from "@/lib/readiness/score";
+export async function GET(){const input={mustHave:[{name:"SQL",frequency:48,evidenced:true},{name:"Python",frequency:35,evidenced:true},{name:"Experiment design",frequency:31,evidenced:false}],differentiators:[{name:"Dashboard design",frequency:22,evidenced:true}],projects:[{completed:true,mappedToGap:true,artifact:true,metricMet:true}],interviewScores:[],applications:0,resumeKeywordCoverage:60,unsupportedClaims:0,postings:32,recentPostings:9,locationFit:80,asOf:new Date().toISOString()};return NextResponse.json(scoreReadiness(input));}

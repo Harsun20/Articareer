@@ -1,0 +1,4 @@
+import { z } from "zod";
+export const SkillSchema=z.object({name:z.string().min(1),level:z.enum(["beginner","intermediate","advanced","expert"]),evidence:z.string().min(1),source:z.enum(["resume","project","user"]),confirmed:z.boolean()});
+export const InterviewReviewSchema=z.object({scores:z.object({relevance:z.number().min(1).max(5),evidence:z.number().min(1).max(5),structure:z.number().min(1).max(5),roleAlignment:z.number().min(1).max(5),communication:z.number().min(1).max(5),technicalDepth:z.number().min(1).max(5)}),strengths:z.array(z.string()),gaps:z.array(z.string()),sampleAnswer:z.string(),followUps:z.array(z.string())});
+export const JobSchema=z.object({title:z.string(),company:z.string(),url:z.string().url(),location:z.string(),description:z.string(),source:z.enum(["JSearch","Adzuna","Demo"])});

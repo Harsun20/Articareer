@@ -1,0 +1,1 @@
+export const resumeNormalizationPrompt=(text:string)=>`Extract experience, education, projects, tools, achievements, and skills with inferred level from this redacted resume. Never invent credentials or achievements. For every skill include an evidence excerpt. Return JSON only. Resume:\n${text.slice(0,18000)}`;
